@@ -74,6 +74,6 @@ elif source_selectbox == config.SOURCES_LIST[1]: # Video
 elif source_selectbox == config.SOURCES_LIST[2]: # Webcam
     infer_uploaded_webcam(confidence, model)
 elif source_selectbox == config.SOURCES_LIST[3]:  # RTSP
-    infer_rtsp_stream(confidence, model, "rtsp://zephyr.rtsp.stream/movie?streamKey=6ce01c880f69d07d101ca9eb4e481a08")  # This should be your function to infer from RTSP stream
+    infer_rtsp_stream(confidence, model, "rtsp://admin:attp1234@192.168.1.46:554/H264/ch1/main/av_stream")  # This should be your function to infer from RTSP stream
 else:
     st.error("Currently only 'Image' and 'Video' source are implemented")

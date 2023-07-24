@@ -165,8 +165,60 @@ def infer_uploaded_webcam(conf, model):
     except Exception as e:
         st.error(f"Error loading video: {str(e)}")
 
+import threading
+import queue
+import time
+
+
+class FrameReader(threading.Thread):
+    def __init__(self, src, queue_size=128):
+        super(FrameReader, self).__init__()
+        self.stream = cv2.VideoCapture(src)
+        self.queue = queue.Queue(maxsize=queue_size)
+
+    def run(self):
+        while True:
+            if not self.queue.full():
+                (grabbed, frame) = self.stream.read()
+                if not grabbed:
+                    break
+                self.queue.put(frame)
+            else:
+                time.sleep(0.1)  # Rest for 100ms, we have a full queue
+
+    def read(self):
+        return self.queue.get()
+
+# in your infer_rtsp_stream function
 
 def infer_rtsp_stream(conf, model, rtsp_url):
+    """
+    Execute inference for RTSP stream.
+    :param conf: Confidence of YOLOv8 model
+    :param model: An instance of the `YOLOv8` class containing the YOLOv8 model.
+    :param rtsp_url: The URL of the RTSP stream.
+    :return: None
+    """
+    try:
+        frame_reader = FrameReader(rtsp_url)
+        frame_reader.start()
+
+        flag = st.button(label="Stop running")
+        st_frame = st.empty()
+        while not flag:
+            image = frame_reader.read()
+            if image is not None:
+                _display_detected_frames(
+                    conf,
+                    model,
+                    st_frame,
+                    image
+                )
+            else:
+                break
+    except Exception as e:
+        st.error(f"Error loading video: {str(e)}")
+def infer_rtsp_stream2(conf, model, rtsp_url):
     """
     Execute inference for RTSP stream.
     :param conf: Confidence of YOLOv8 model
@@ -179,6 +231,34 @@ def infer_rtsp_stream(conf, model, rtsp_url):
         vid_cap = cv2.VideoCapture(rtsp_url)  # RTSP stream
         st_frame = st.empty()
         while not flag:
+            success, image = vid_cap.read()
+            if success:
+                _display_detected_frames(
+                    conf,
+                    model,
+                    st_frame,
+                    image
+                )
+            else:
+                vid_cap.release()
+                break
+    except Exception as e:
+        st.error(f"Error loading video: {str(e)}")
+
+def infer_uploaded_webcam2(conf, model):
+    """
+    Execute inference for webcam.
+    :param conf: Confidence of YOLOv8 model
+    :param model: An instance of the `YOLOv8` class containing the YOLOv8 model.
+    :return: None
+    """
+    try:
+        flag = st.button(
+            label="Start / Stop webcam"
+        )
+        vid_cap = cv2.VideoCapture(0)  # local camera
+        st_frame = st.empty()
+        while flag:
             success, image = vid_cap.read()
             if success:
                 _display_detected_frames(
